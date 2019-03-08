@@ -1,0 +1,163 @@
+#!/usr/bin/perl
+# Programmer:    Craig Stuart Sapp <craig.stanford.edu>
+# Creation Date: Thu Mar  7 17:25:02 PST 2019
+# Last Modified: Thu Mar  7 17:25:05 PST 2019
+# Filename:      miditempo
+# Syntax:        perl 5
+# vim:           ts=3
+#
+# Description: Set or read MIDI tempo in piano-roll MIDI files.  The tempo is
+#              handled differently than in a typical MIDI files.  Ticks in the 
+#              MIDI files are equivalent to pixel rows in the original image
+#              (starting at the first note/expression hole on the roll).
+#              The tempo is not controlled directly by tempo meta messages, but
+#              rather the ticks per quarter note value in the MIDI file header.
+#              For a 300 DPI scan, the tpq value is six times the tempo.
+#
+#              Tempo meta-messages are used to emulate the roll acceleration.
+#              These tempo meta-messages do not change when changing the tempo
+#              using this script.  The accelleration is set to 0.4%/foot
+#              (0.4%/3600 ticks).
+#
+#              The binasc program needs to be installed before using this script. It
+#              can be found in https://github.com/craigsapp/midifile .
+#
+# Options:
+#    -s #  == Set the tempo to # (such as "-s 100" to set the tempo to 100).
+#    -l    == List the current tempo of the MIDI file(s). 
+#    -o    == Overwrite original MIDI file with new tempo version.
+#    -r    == Use red welte tempo (98.4251968504 -> 98.5).
+#
+# Examples:
+# 
+# * To change the tempo of a MIDI file to the default Red Welte tempo:
+#      miditempo -ro file.mid
+#
+# * To change all tempos in multipl files to default Red Welte tempo:
+#      miditempo -ro *.mid
+#
+# * To set the tempo of a MIDI file to 100:
+#      miditempo -s 100 file.mid
+#
+# * To list tempo in a file:
+#      miditempo -l file.mid
+#
+# * To list tempos in multiple files:
+#      miditempo -l *.mid
+#
+
+use strict;
+use Getopt::Long;
+
+my $binasc = `which binasc`;
+chomp $binasc;
+die "binasc program needed to run this command." if $binasc =~ /^\s*$/;
+
+my $tempo = 0;
+my $list  = 0;
+my $overwrite = 0;
+my $red = 0;
+Getopt::Long::Configure("bundling");
+GetOptions (
+   's|set-tempo=s' => \$tempo,
+   'l|list-tempo'  => \$list,
+   'o|overwrite'   => \$overwrite,
+   'r|red-write'   => \$red
+);
+if ($red) {
+	$tempo = 98.4251968504;  # 3.0 meters/second default speed for Red Welte rolls.
+}
+my $TICKS = int($tempo * 6 + 0.5);
+
+die "Usage: $0 [[[-r|-s #] [-o]]|-l] midifile(s)\n" if @ARGV == 0;
+
+if ($list) {
+	displayTempos(@ARGV);
+} elsif ($tempo > 0.0) {
+	changeTempos(@ARGV);
+} else {
+	die "Usage: $0 [[[-r|-s #] [-o]]|-l] midifile(s)\n";
+}
+
+exit(0);
+
+
+
+##############################
+##
+## changeTempos --
+##
+
+sub changeTempos {
+	my @files = @_;
+	for (my $i=0; $i<@files; $i++) {
+		changeTempo($files[$i]);
+	}
+}
+
+
+
+##############################
+##
+## changeTempo --
+##
+
+sub changeTempo {
+	my ($file) = @_;
+	die "ERROR: cannot find $file" if !-r $file;
+	my @contents = `$binasc -M $file`;
+	die "ERROR: not a MIDI file: $file\nLINE: $contents[0]\n" if $contents[0] !~ /MThd/;
+	$contents[4] =~ s/2'(\d+)/2'$TICKS/;
+	my $base = $file;
+	$base =~ s/\.mid$//;
+	open (XFILE, ">temp.binasc") or die "Cannot write temp file in current directory\n";
+	print XFILE @contents;
+	close XFILe;
+	`$binasc temp.binasc -c "$base-output.mid"`;
+	`rm -f temp.binasc`;
+	if ($overwrite) {
+		`mv "$base-output.mid" "$file"`;
+		print "Set tempo of $file to $tempo\n";
+	} else {
+		print "Created $base-output.mid with using new tempo of $tempo\n";
+	}
+}
+
+
+
+##############################
+##
+## displayTempos --
+##
+
+sub displayTempos {
+	my @files = @_;
+	for (my $i=0; $i<@files; $i++) {
+		my $value = getTempo($files[$i]);
+		print $value;
+		if (@files > 1) {
+			print "\t$files[$i]";
+		}
+		print "\n";
+	}
+}
+
+
+
+##############################
+##
+## getTempo --
+##
+
+sub getTempo {
+	my ($file) = @_;
+	die "ERROR: cannot find $file" if !-r $file;
+	my @contents = `$binasc -M $file`;
+	die "ERROR: not a MIDI file: $file\nLINE: $contents[0]\n" if $contents[0] !~ /MThd/;
+	$contents[4] =~ /2'(\d+)/;
+	my $value = $1 / 6.0;
+	return (int($value * 10.0 + 0.5)) / 10.0;
+}
+	
+
+

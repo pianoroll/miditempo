@@ -27,6 +27,24 @@ To install the script in `/usr/local/bin` type the command:
 make install
 ```
 
+The binasc program is required by this script.  To install from github, type these commands in the terminal:
+
+```bash
+git clone https://github.com/craigsapp/binasc
+cd binasc
+make
+make install
+```
+
+The last step will copy the executable program to `/usr/local/bin`.  Type the command:
+
+```bash
+which binasc
+```
+
+to verify that the shell can see it; if so, then you should be ready to use the miditempo script to change tempos of pianoroll MIDI files.
+
+
 
 Options
 -------

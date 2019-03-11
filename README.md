@@ -49,12 +49,12 @@ to verify that the shell can see it; if so, then you should be ready to use the 
 Options
 -------
 
-Option | Description
-=======|============
--s #   | Set the tempo to # (such as "-s 100" to set the tempo to 100).
--l     | List the current tempo of the MIDI file(s). 
--o     | Overwrite original MIDI file with new tempo version.
--r     | Use red welte tempo (98.4251968504 -> 98.5).
+|Option | Description
+|:-----:|:-----------
+| -s #  | Set the tempo to # (such as "-s 100" to set the tempo to 100).
+| -l    | List the current tempo of the MIDI file(s). 
+| -o    | Overwrite original MIDI file with new tempo version.
+| -r    | Use red welte tempo (98.4251968504 -> 98.5).
 
 
 Examples

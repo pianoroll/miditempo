@@ -92,3 +92,10 @@ miditempo -l file.mid
 miditempo -l *.mid
 ```
 
+
+Caveats
+--------
+
+This script will need to be updated for MIDI files that are derived from scans of DEA rolls (or any roll scanned at the higher camera position).
+
+

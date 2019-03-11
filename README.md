@@ -24,6 +24,8 @@ Installation
 To install the script in `/usr/local/bin` type the command:
 
 ```bash
+git clone https://github.com/pianoroll/miditempo
+cd miditempo
 make install
 ```
 
